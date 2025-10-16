@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:padding="20dp" android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Charadas" android:textStyle="bold" android:textSize="28sp"/>
+
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Selecciona categoría:" android:layout_marginTop="16dp"/>
+
+        <Spinner
+            android:id="@+id/spCategory" android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Duración (segundos):" android:layout_marginTop="16dp"/>
+
+        <EditText
+            android:id="@+id/etSeconds" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:inputType="number"
+            android:hint="60" android:text="60"/>
+
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Nombres de equipos:" android:layout_marginTop="16dp"/>
+
+        <EditText
+            android:id="@+id/etTeamA" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:hint="Equipo A" android:text="Equipo A"/>
+
+        <EditText
+            android:id="@+id/etTeamB" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:hint="Equipo B" android:text="Equipo B"/>
+
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="¿Quién juega esta ronda?" android:layout_marginTop="16dp"/>
+
+        <RadioGroup
+            android:id="@+id/rgWhoPlays" android:layout_width="match_parent" android:layout_height="wrap_content">
+            <RadioButton
+                android:id="@+id/rbTeamA" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Equipo A" android:checked="true"/>
+            <RadioButton
+                android:id="@+id/rbTeamB" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Equipo B"/>
+        </RadioGroup>
+
+        <Button
+            android:id="@+id/btnStart" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:text="INICIAR RONDA" android:layout_marginTop="24dp"/>
+    </LinearLayout>
+</ScrollView>
