@@ -1,4 +1,4 @@
-package com.JavierF.charadas  // ← cámbialo si tu package es distinto
+package com.JavierF.charadas
 
 import android.content.Intent
 import android.os.Bundle
@@ -25,14 +25,8 @@ class MainActivity : ComponentActivity() {
         val btnStart     = findViewById<Button>(R.id.btnStart)
         val btnResetMain = findViewById<Button>(R.id.btnResetMain)
 
-        // Spinner de categorías
-        spCategory.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_dropdown_item,
-            categorias
-        )
+        spCategory.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, categorias)
 
-        // Cargar nombres guardados y decidir si mostrar el botón de reset
         val store = ScoreStore(this)
         val (savedA, savedB) = store.getTeamNames()
         etTeamA.setText(savedA.ifBlank { "Equipo A" })
@@ -41,25 +35,22 @@ class MainActivity : ComponentActivity() {
         val (totA, totB) = store.getTotals()
         btnResetMain.visibility = if (totA > 0 || totB > 0) View.VISIBLE else View.GONE
 
-        // Reiniciar marcador Y nombres + feedback visual
         btnResetMain.setOnClickListener {
-            store.resetAll() // puntajes y nombres a valores por defecto
+            store.resetAll()
             etTeamA.setText("Equipo A")
             etTeamB.setText("Equipo B")
-            etSeconds.setText("60")
+            etSeconds.setText("30")
             spCategory.setSelection(0)
             btnResetMain.visibility = View.GONE
             Toast.makeText(this, "Marcador y nombres reiniciados", Toast.LENGTH_SHORT).show()
         }
 
-        // Iniciar flujo: empieza siempre Equipo A, 1ª del par
         btnStart.setOnClickListener {
-            val secs = etSeconds.text.toString().toIntOrNull() ?: 60
+            val secs = etSeconds.text.toString().toIntOrNull() ?: 30
             val category = spCategory.selectedItem?.toString() ?: categorias.first()
             val teamA = etTeamA.text.toString().ifBlank { "Equipo A" }
             val teamB = etTeamB.text.toString().ifBlank { "Equipo B" }
 
-            // Guardar nombres para mantenerlos al volver al menú
             store.saveTeamNames(teamA, teamB)
 
             val i = Intent(this, GameActivity::class.java).apply {
@@ -67,8 +58,8 @@ class MainActivity : ComponentActivity() {
                 putExtra("seconds", secs)
                 putExtra("teamA", teamA)
                 putExtra("teamB", teamB)
-                putExtra("teamAPlaying", true)     // empieza Equipo A
-                putExtra("isSecondOfPair", false)  // 1ª ronda del par (A)
+                putExtra("teamAPlaying", true)
+                putExtra("isSecondOfPair", false)
             }
             startActivity(i)
         }

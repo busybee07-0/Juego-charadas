@@ -1,11 +1,11 @@
 package com.JavierF.charadas
 
-import android.animation.ArgbEvaluator
-import android.animation.ValueAnimator
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.ComponentActivity
@@ -21,16 +21,18 @@ class GameActivity : ComponentActivity() {
     private lateinit var tvWord: TextView
     private lateinit var btnPass: Button
     private lateinit var btnCorrect: Button
+    private lateinit var flashOverlay: View
 
     private var category = "Animales"
-    private var seconds = 60
+    private var seconds = 30
     private var teamA = "Equipo A"
     private var teamB = "Equipo B"
     private var teamAPlaying = true
-    private var isSecondOfPair = false   // false = 1ª ronda (A), true = 2ª ronda (B)
+    private var isSecondOfPair = false
 
     private var roundScore = 0
     private var timer: CountDownTimer? = null
+    private var finishingOrPaused = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,7 +42,7 @@ class GameActivity : ComponentActivity() {
 
         intent.extras?.let {
             category = it.getString("category", category)
-            seconds = it.getInt("seconds", seconds)
+            seconds = it.getInt("seconds", seconds) // vendrá desde Main; default 30 allí
             teamA = it.getString("teamA", teamA)
             teamB = it.getString("teamB", teamB)
             teamAPlaying = it.getBoolean("teamAPlaying", true)
@@ -53,26 +55,37 @@ class GameActivity : ComponentActivity() {
         tvWord   = findViewById(R.id.tvWord)
         btnPass  = findViewById(R.id.btnPass)
         btnCorrect = findViewById(R.id.btnCorrect)
+        flashOverlay = findViewById(R.id.flashOverlay)
 
         tvHeader.text = (if (teamAPlaying) teamA else teamB) + " • " + category
         tvTimer.text = seconds.toString()
         tvScore.text = "Puntos: 0"
 
         repo = WordsRepository().also { it.resetCategory(category) }
-        showNextWord()
+        showNextWord(pop = false)
 
         btnCorrect.setOnClickListener {
             roundScore++
             tvScore.text = "Puntos: $roundScore"
-            showNextWord()
+            flashOverlayColor(getColorCompat(R.color.success), 0.6f) // VERDE
+            showNextWord(pop = true)
         }
-        btnPass.setOnClickListener { showNextWord() }
+        btnPass.setOnClickListener {
+            flashOverlayColor(getColorCompat(R.color.danger), 0.6f)  // ROJO
+            showNextWord(pop = true)
+        }
 
         startTimer()
     }
 
-    private fun showNextWord() {
+    private fun showNextWord(pop: Boolean) {
         tvWord.text = repo.nextWord()
+        if (pop) {
+            tvWord.scaleX = 0.85f
+            tvWord.scaleY = 0.85f
+            tvWord.animate().scaleX(1f).scaleY(1f)
+                .setDuration(180).setInterpolator(AccelerateDecelerateInterpolator()).start()
+        }
     }
 
     private fun startTimer() {
@@ -81,7 +94,10 @@ class GameActivity : ComponentActivity() {
             override fun onTick(ms: Long) {
                 val s = (ms / 1000).toInt()
                 tvTimer.text = s.toString()
-                if (s in 1..3) flashBackground() // <- últimos 3s
+                if (s in 1..3) {
+                    // PULSO AZUL (suave) usando el overlay, sin tocar decorView
+                    flashOverlayColor(Color.parseColor("#332196F3"), 0.3f, inMs = 120, outMs = 180)
+                }
             }
             override fun onFinish() {
                 tvTimer.text = "0"
@@ -90,36 +106,47 @@ class GameActivity : ComponentActivity() {
         }.start()
     }
 
-    private fun flashBackground() {
-        val from = Color.TRANSPARENT
-        val to = Color.parseColor("#55FF0000") // rojo translúcido
-        val anim = ValueAnimator.ofObject(ArgbEvaluator(), from, to, from)
-        anim.duration = 500
-        anim.addUpdateListener { valueAnimator ->
-            window.decorView.setBackgroundColor(valueAnimator.animatedValue as Int)
+    /** ---------- ANIMACIONES CON OVERLAY ---------- **/
+    private fun flashOverlayColor(color: Int, maxAlpha: Float, inMs: Long = 140, outMs: Long = 260) {
+        if (finishingOrPaused) return
+        try {
+            flashOverlay.setBackgroundColor(color)
+            flashOverlay.alpha = 0f
+            flashOverlay.visibility = View.VISIBLE
+            flashOverlay.animate().alpha(maxAlpha).setDuration(inMs).withEndAction {
+                if (!finishingOrPaused) {
+                    flashOverlay.animate().alpha(0f).setDuration(outMs).withEndAction {
+                        flashOverlay.visibility = View.GONE
+                    }.start()
+                } else {
+                    flashOverlay.visibility = View.GONE
+                }
+            }.start()
+        } catch (_: Throwable) {
+            // seguridad extra ante cualquier estado raro de la vista
+            flashOverlay.visibility = View.GONE
         }
-        anim.start()
     }
+
+    private fun getColorCompat(resId: Int): Int = resources.getColor(resId, theme)
+    /** ---------- FIN ANIMACIONES ---------- **/
 
     private fun endRound() {
         timer?.cancel()
-        // Sumar al equipo que jugó
         store.addTo(teamAPlaying, roundScore)
 
         if (!isSecondOfPair) {
-            // Era la 1ª del par (por ejemplo A). Mostramos pantalla para B y arrancamos en 5s.
             val i = Intent(this, SwitchTeamActivity::class.java).apply {
                 putExtra("category", category)
                 putExtra("seconds", seconds)
                 putExtra("teamA", teamA)
                 putExtra("teamB", teamB)
-                putExtra("nextIsTeamA", !teamAPlaying) // alternamos
-                putExtra("isSecondOfPair", true)       // la próxima será la 2ª del par
+                putExtra("nextIsTeamA", !teamAPlaying)
+                putExtra("isSecondOfPair", true)
             }
             startActivity(i)
             finish()
         } else {
-            // Era la 2ª del par -> vamos a resultados
             val i = Intent(this, ResultActivity::class.java).apply {
                 putExtra("roundScore", roundScore)
                 putExtra("teamAPlaying", teamAPlaying)
@@ -132,7 +159,14 @@ class GameActivity : ComponentActivity() {
     }
 
     override fun onPause() {
+        finishingOrPaused = true
         super.onPause()
         timer?.cancel()
     }
+
+    override fun onResume() {
+        super.onResume()
+        finishingOrPaused = false
+    }
 }
+

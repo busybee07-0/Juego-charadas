@@ -15,7 +15,6 @@ class SwitchTeamActivity : ComponentActivity() {
     private var teamB = "Equipo B"
     private var nextIsTeamA = false
     private var isSecondOfPair = true
-
     private var timer: CountDownTimer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,7 +24,7 @@ class SwitchTeamActivity : ComponentActivity() {
         val tvNextTeam   = findViewById<TextView>(R.id.tvNextTeam)
         val tvCountdown  = findViewById<TextView>(R.id.tvCountdown)
         val tvCategory   = findViewById<TextView>(R.id.tvCategory)
-        val tvRoundTime  = findViewById<TextView>(R.id.tvRoundTime)   // ← NUEVO
+        val tvRoundTime  = findViewById<TextView>(R.id.tvRoundTime)
 
         intent.extras?.let {
             category = it.getString("category", category)
@@ -39,7 +38,7 @@ class SwitchTeamActivity : ComponentActivity() {
         val nextTeamName = if (nextIsTeamA) teamA else teamB
         tvNextTeam.text = "Siguiente: $nextTeamName"
         tvCategory.text = "Categoría: $category"
-        tvRoundTime.text = "Ronda de ${seconds} s"   // ← NUEVO
+        tvRoundTime.text = "Ronda de ${seconds} s"
         tvCountdown.text = "Comienza en $secondsToStart..."
 
         timer = object : CountDownTimer(secondsToStart * 1000L, 1000L) {
@@ -47,9 +46,7 @@ class SwitchTeamActivity : ComponentActivity() {
                 val s = (ms / 1000).toInt()
                 tvCountdown.text = "Comienza en $s..."
             }
-            override fun onFinish() {
-                startNextRound()
-            }
+            override fun onFinish() { startNextRound() }
         }.start()
     }
 
@@ -67,8 +64,6 @@ class SwitchTeamActivity : ComponentActivity() {
     }
 
     override fun onPause() {
-        super.onPause()
-        timer?.cancel()
+        super.onPause(); timer?.cancel()
     }
 }
-

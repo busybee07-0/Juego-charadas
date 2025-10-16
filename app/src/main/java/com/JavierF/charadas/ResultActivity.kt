@@ -19,14 +19,9 @@ class ResultActivity : ComponentActivity() {
         val roundScore = intent.getIntExtra("roundScore", 0)
         val teamAPlaying = intent.getBooleanExtra("teamAPlaying", true)
 
-        // Nombres guardados (con fallback seguro)
-        val (savedA, savedB) = store.getTeamNames()
-        val nameA = intent.getStringExtra("teamA")?.ifBlank { savedA } ?: savedA
-        val nameB = intent.getStringExtra("teamB")?.ifBlank { savedB } ?: savedB
-
+        val (nameA, nameB) = store.getTeamNames()
         val (totA, totB) = store.getTotals()
 
-        // UI
         val tvWinner = findViewById<TextView>(R.id.tvWinner)
         val tvSummary = findViewById<TextView>(R.id.tvSummary)
         val tvRowTeamA = findViewById<TextView>(R.id.tvRowTeamA)
@@ -36,29 +31,31 @@ class ResultActivity : ComponentActivity() {
         val btnMenu = findViewById<Button>(R.id.btnMenu)
         val btnReset = findViewById<Button>(R.id.btnReset)
 
-        // Resumen de la última ronda
         val quien = if (teamAPlaying) nameA else nameB
         tvSummary.text = "¡Tiempo! $quien hizo $roundScore punto(s)"
 
-        // “Tabla”
         tvRowTeamA.text = nameA
         tvRowTeamB.text = nameB
         tvRowPointsA.text = totA.toString()
         tvRowPointsB.text = totB.toString()
 
-        // Ganador (encabezado)
         when {
             totA > totB -> {
                 tvWinner.text = "$nameA es el GANADOR"
-                tvWinner.setTextColor(Color.parseColor("#2E7D32"))
+                tvWinner.background = resources.getDrawable(R.drawable.winner_badge, theme)
+                tvWinner.setTextColor(Color.WHITE)
             }
             totB > totA -> {
                 tvWinner.text = "$nameB es el GANADOR"
-                tvWinner.setTextColor(Color.parseColor("#2E7D32"))
+                tvWinner.background = resources.getDrawable(R.drawable.winner_badge, theme)
+                tvWinner.setTextColor(Color.WHITE)
             }
             else -> {
                 tvWinner.text = "¡EMPATE!"
-                tvWinner.setTextColor(Color.parseColor("#F57C00"))
+                // Badge ámbar improvisado sobre el mismo drawable
+                tvWinner.background = resources.getDrawable(R.drawable.winner_badge, theme)
+                tvWinner.background.setTint(getColor(R.color.warning))
+                tvWinner.setTextColor(Color.WHITE)
             }
         }
 
@@ -68,10 +65,11 @@ class ResultActivity : ComponentActivity() {
         }
 
         btnReset.setOnClickListener {
-            store.resetTotals()
+            store.resetAll()
             tvRowPointsA.text = "0"
             tvRowPointsB.text = "0"
             tvWinner.text = "Marcador reiniciado"
+            tvWinner.background = null
             tvWinner.setTextColor(Color.DKGRAY)
             tvSummary.text = ""
         }

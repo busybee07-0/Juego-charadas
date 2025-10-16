@@ -4,7 +4,7 @@ class WordsRepository {
 
     private val data: Map<String, List<String>> = mapOf(
         "Animales" to listOf("Perro","Gato","Elefante","Tiburón","Águila","Jirafa","Pingüino","Tortuga","Delfín","León"),
-        "Películas" to listOf("El libro de la vida","Crepusculo","Yo antes de ti","Up","Interestelar","Toy Story","Ponyo","El castillo ambulante","Coco","Big fish & begonia"),
+        "Películas" to listOf("El libro de la vida","Crepúsculo","Yo antes de ti","Up","Interestelar","Toy Story","Ponyo","El castillo ambulante","Coco","Big fish & begonia"),
         "Profesiones" to listOf("Médico","Ingeniero","Abogado","Panadero","Carpintero","Docente","Piloto","Chef","Fotógrafo","Arquitecto")
     )
 
@@ -19,7 +19,6 @@ class WordsRepository {
 
     fun nextWord(): String {
         if (pool.isEmpty()) {
-            // repuebla cuando se agota para seguir jugando
             pool = (data[currentCategory] ?: emptyList()).toMutableList()
             pool.shuffle()
         }
