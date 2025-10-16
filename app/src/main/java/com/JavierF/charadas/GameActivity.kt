@@ -1,4 +1,4 @@
-package com.JavierF.charadas
+package com.JavierF.charadas   // ← cámbialo a tu package si es distinto
 
 import android.content.Intent
 import android.os.Bundle
@@ -9,7 +9,11 @@ import androidx.activity.ComponentActivity
 
 class GameActivity : ComponentActivity() {
 
+    // Repositorio de palabras y almacenamiento de marcador
     private lateinit var repo: WordsRepository
+    private lateinit var store: ScoreStore
+
+    // UI
     private lateinit var tvHeader: TextView
     private lateinit var tvTimer: TextView
     private lateinit var tvScore: TextView
@@ -17,6 +21,7 @@ class GameActivity : ComponentActivity() {
     private lateinit var btnPass: Button
     private lateinit var btnCorrect: Button
 
+    // Datos de la ronda
     private var category = "Animales"
     private var seconds = 60
     private var teamA = "Equipo A"
@@ -30,7 +35,10 @@ class GameActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game)
 
-        // lee extras de la Fase 1
+        // Store marcador global
+        store = ScoreStore(this)
+
+        // Extras desde el menú
         intent.extras?.let {
             category = it.getString("category", "Animales")
             seconds = it.getInt("seconds", 60)
@@ -39,7 +47,7 @@ class GameActivity : ComponentActivity() {
             teamAPlaying = it.getBoolean("teamAPlaying", true)
         }
 
-        // refs UI
+        // Referencias UI
         tvHeader = findViewById(R.id.tvHeader)
         tvTimer  = findViewById(R.id.tvTimer)
         tvScore  = findViewById(R.id.tvScore)
@@ -47,13 +55,16 @@ class GameActivity : ComponentActivity() {
         btnPass  = findViewById(R.id.btnPass)
         btnCorrect = findViewById(R.id.btnCorrect)
 
+        // Header y valores iniciales
         tvHeader.text = (if (teamAPlaying) teamA else teamB) + " • " + category
         tvTimer.text = seconds.toString()
         tvScore.text = "Puntos: 0"
 
+        // Palabras por categoría
         repo = WordsRepository().also { it.resetCategory(category) }
         showNextWord()
 
+        // Botones
         btnCorrect.setOnClickListener {
             roundScore++
             tvScore.text = "Puntos: $roundScore"
@@ -61,6 +72,7 @@ class GameActivity : ComponentActivity() {
         }
         btnPass.setOnClickListener { showNextWord() }
 
+        // Temporizador
         startTimer()
     }
 
@@ -83,14 +95,21 @@ class GameActivity : ComponentActivity() {
 
     private fun endRound() {
         timer?.cancel()
-        // De momento solo volvemos al menú; en FASE 3 iremos a ResultActivity
-        val i = Intent(this, MainActivity::class.java)
+        // Sumar puntaje de la ronda al equipo que jugó
+        store.addTo(teamAPlaying, roundScore)
+
+        // Ir a resultados
+        val i = Intent(this, ResultActivity::class.java).apply {
+            putExtra("roundScore", roundScore)
+            putExtra("teamAPlaying", teamAPlaying)
+        }
         startActivity(i)
         finish()
     }
 
     override fun onPause() {
         super.onPause()
-        timer?.cancel() // el profe pidió controlar el temporizador por ronda
+        // Controlar el temporizador por ronda (requisito del profe)
+        timer?.cancel()
     }
 }

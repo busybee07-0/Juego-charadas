@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
                 putExtra("teamB", teamB)
                 putExtra("teamAPlaying", teamAPlaying)
             }
+            ScoreStore(this).saveTeamNames(teamA, teamB)
             startActivity(i)
         }
     }
