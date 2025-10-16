@@ -1,6 +1,9 @@
-package com.JavierF.charadas   // ← cámbialo a tu package si es distinto
+package com.JavierF.charadas
 
+import android.animation.ArgbEvaluator
+import android.animation.ValueAnimator
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.widget.Button
@@ -9,11 +12,9 @@ import androidx.activity.ComponentActivity
 
 class GameActivity : ComponentActivity() {
 
-    // Repositorio de palabras y almacenamiento de marcador
     private lateinit var repo: WordsRepository
     private lateinit var store: ScoreStore
 
-    // UI
     private lateinit var tvHeader: TextView
     private lateinit var tvTimer: TextView
     private lateinit var tvScore: TextView
@@ -21,12 +22,12 @@ class GameActivity : ComponentActivity() {
     private lateinit var btnPass: Button
     private lateinit var btnCorrect: Button
 
-    // Datos de la ronda
     private var category = "Animales"
     private var seconds = 60
     private var teamA = "Equipo A"
     private var teamB = "Equipo B"
     private var teamAPlaying = true
+    private var isSecondOfPair = false   // false = 1ª ronda (A), true = 2ª ronda (B)
 
     private var roundScore = 0
     private var timer: CountDownTimer? = null
@@ -35,19 +36,17 @@ class GameActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game)
 
-        // Store marcador global
         store = ScoreStore(this)
 
-        // Extras desde el menú
         intent.extras?.let {
-            category = it.getString("category", "Animales")
-            seconds = it.getInt("seconds", 60)
-            teamA = it.getString("teamA", "Equipo A")
-            teamB = it.getString("teamB", "Equipo B")
+            category = it.getString("category", category)
+            seconds = it.getInt("seconds", seconds)
+            teamA = it.getString("teamA", teamA)
+            teamB = it.getString("teamB", teamB)
             teamAPlaying = it.getBoolean("teamAPlaying", true)
+            isSecondOfPair = it.getBoolean("isSecondOfPair", false)
         }
 
-        // Referencias UI
         tvHeader = findViewById(R.id.tvHeader)
         tvTimer  = findViewById(R.id.tvTimer)
         tvScore  = findViewById(R.id.tvScore)
@@ -55,16 +54,13 @@ class GameActivity : ComponentActivity() {
         btnPass  = findViewById(R.id.btnPass)
         btnCorrect = findViewById(R.id.btnCorrect)
 
-        // Header y valores iniciales
         tvHeader.text = (if (teamAPlaying) teamA else teamB) + " • " + category
         tvTimer.text = seconds.toString()
         tvScore.text = "Puntos: 0"
 
-        // Palabras por categoría
         repo = WordsRepository().also { it.resetCategory(category) }
         showNextWord()
 
-        // Botones
         btnCorrect.setOnClickListener {
             roundScore++
             tvScore.text = "Puntos: $roundScore"
@@ -72,7 +68,6 @@ class GameActivity : ComponentActivity() {
         }
         btnPass.setOnClickListener { showNextWord() }
 
-        // Temporizador
         startTimer()
     }
 
@@ -84,7 +79,9 @@ class GameActivity : ComponentActivity() {
         timer?.cancel()
         timer = object : CountDownTimer(seconds * 1000L, 1000L) {
             override fun onTick(ms: Long) {
-                tvTimer.text = (ms / 1000).toString()
+                val s = (ms / 1000).toInt()
+                tvTimer.text = s.toString()
+                if (s in 1..3) flashBackground() // <- últimos 3s
             }
             override fun onFinish() {
                 tvTimer.text = "0"
@@ -93,23 +90,49 @@ class GameActivity : ComponentActivity() {
         }.start()
     }
 
+    private fun flashBackground() {
+        val from = Color.TRANSPARENT
+        val to = Color.parseColor("#55FF0000") // rojo translúcido
+        val anim = ValueAnimator.ofObject(ArgbEvaluator(), from, to, from)
+        anim.duration = 500
+        anim.addUpdateListener { valueAnimator ->
+            window.decorView.setBackgroundColor(valueAnimator.animatedValue as Int)
+        }
+        anim.start()
+    }
+
     private fun endRound() {
         timer?.cancel()
-        // Sumar puntaje de la ronda al equipo que jugó
+        // Sumar al equipo que jugó
         store.addTo(teamAPlaying, roundScore)
 
-        // Ir a resultados
-        val i = Intent(this, ResultActivity::class.java).apply {
-            putExtra("roundScore", roundScore)
-            putExtra("teamAPlaying", teamAPlaying)
+        if (!isSecondOfPair) {
+            // Era la 1ª del par (por ejemplo A). Mostramos pantalla para B y arrancamos en 5s.
+            val i = Intent(this, SwitchTeamActivity::class.java).apply {
+                putExtra("category", category)
+                putExtra("seconds", seconds)
+                putExtra("teamA", teamA)
+                putExtra("teamB", teamB)
+                putExtra("nextIsTeamA", !teamAPlaying) // alternamos
+                putExtra("isSecondOfPair", true)       // la próxima será la 2ª del par
+            }
+            startActivity(i)
+            finish()
+        } else {
+            // Era la 2ª del par -> vamos a resultados
+            val i = Intent(this, ResultActivity::class.java).apply {
+                putExtra("roundScore", roundScore)
+                putExtra("teamAPlaying", teamAPlaying)
+                putExtra("teamA", teamA)
+                putExtra("teamB", teamB)
+            }
+            startActivity(i)
+            finish()
         }
-        startActivity(i)
-        finish()
     }
 
     override fun onPause() {
         super.onPause()
-        // Controlar el temporizador por ronda (requisito del profe)
         timer?.cancel()
     }
 }

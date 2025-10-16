@@ -24,4 +24,14 @@ class ScoreStore(ctx: Context) {
     fun resetTotals() {
         sp.edit().putInt("scoreA", 0).putInt("scoreB", 0).apply()
     }
+
+    // 👇 NUEVO: resetea todo (puntajes + nombres)
+    fun resetAll() {
+        sp.edit()
+            .putInt("scoreA", 0)
+            .putInt("scoreB", 0)
+            .putString("teamA", "Equipo A")
+            .putString("teamB", "Equipo B")
+            .apply()
+    }
 }
